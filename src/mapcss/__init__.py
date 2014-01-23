@@ -297,13 +297,15 @@ class MapCSS():
                         zindex.add(float(stylez.get('z-index', 0)))
                 zindex = list(zindex)
                 zindex.sort()
+                zoffset = len([x for x in zindex if x < 0])
                 for chooser in self.choosers:
                     for stylez in chooser.styles:
                         if 'z-index' in stylez:
+                            res = zindex.index(float(stylez.get('z-index', 0))) - zoffset
                             if stretch:
-                                stylez['z-index'] = 1. * zindex.index(float(stylez.get('z-index', 0))) / len(zindex) * stretch
+                                stylez['z-index'] = 1. * res / len(zindex) * stretch
                             else:
-                                stylez['z-index'] = zindex.index(float(stylez.get('z-index', 0)))
+                                stylez['z-index'] = res
 
         except TypeError:
             pass

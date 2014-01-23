@@ -171,7 +171,7 @@ def komap_mapswithme(options, style, filename):
                             dr_line = LineRuleProto()
                             dr_line.width = (st.get('width', 0) * WIDTH_SCALE) + (st.get('casing-width') * WIDTH_SCALE * 2)
                             dr_line.color = mwm_encode_color(st, "casing")
-                            dr_line.priority = min(int(st.get('z-index', 0)), 20000)
+                            dr_line.priority = min(int(st.get('z-index', 0) + 999), 20000)
                             dashes = st.get('casing-dashes', st.get('dashes', []))
                             dr_line.dashdot.dd.extend(dashes)
                             dr_line.cap = dr_linecaps.get(st.get('casing-linecap', 'butt'), BUTTCAP)
@@ -258,7 +258,13 @@ def komap_mapswithme(options, style, filename):
                             if st.get('fill-position', 'foreground') == 'background':
                                 if 'z-index' not in st:
                                     bgpos -= 1
-                                dr_element.area.priority = (int(st.get('z-index', bgpos)) - 16000)
+                                    dr_element.area.priority = bgpos - 16000
+                                else:
+                                    zzz = int(st.get('z-index', 0))
+                                    if zzz > 0:
+                                        dr_element.area.priority = zzz - 16000
+                                    else:
+                                        dr_element.area.priority = zzz - 16700
                             else:
                                 dr_element.area.priority = (int(st.get('z-index', 0)) + 1 + 1000)
                             has_fills = False
