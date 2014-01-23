@@ -1,6 +1,4 @@
 from drules_struct_pb2 import *
-import texture_packer
-
 
 import os
 import csv
@@ -71,31 +69,10 @@ def komap_mapswithme(options, style, filename):
             bgprefix += "-"
         if prefix + "image" not in st:
             return False
-        icon = {
-            "file": os.path.join(basepath,st.get(prefix + "image")),
-            "fill-color": "",
-            "color": "",
-            "symbol-image": "",
-            "symbol-file": "",
-            "symbol-fill-color": "",
-            "symbol-color": "",
-            #"width": st.get(prefix + "width", ""),
-            #"height": st.get(prefix + "height", ""),
-        }
 
-        if st.get(prefix + "color"):
-            icon["color"] = whatever_to_hex(st.get(prefix + "color"))
-        if st.get(prefix + "fill-color"):
-            icon["fill-color"] = whatever_to_hex(st.get(prefix + "fill-color"))
-        if st.get(bgprefix + "image"):
-            icon["symbol-image"] = st.get(bgprefix + "image")
-            icon["symbol-file"] = os.path.join(basepath,st.get(bgprefix + "image"))
-            if st.get(bgprefix + "color"):
-                icon["symbol-color"] = whatever_to_hex(st.get(bgprefix + "color"))
-            if st.get(bgprefix + "fill-color"):
-                icon["symbol-fill-color"] = whatever_to_hex(st.get(bgprefix + "fill-color"))
-        handle = ":".join([str(i) for i in [st.get(prefix + "image"), icon["fill-color"], icon["color"], icon["symbol-image"], icon["symbol-fill-color"], icon["symbol-color"]]])
-        return handle, icon
+        # strip last ".svg"
+        handle = st.get(prefix + "image")[:-4]
+        return handle, handle
 
     bgpos = 0
 
@@ -279,15 +256,6 @@ def komap_mapswithme(options, style, filename):
     visnodes = set()
     drules_bin.write(drules.SerializeToString())
     drules_txt.write(unicode(drules))
-
-    gui_symbol_path = os.path.join(ddir, 'symbols')
-    imgpaths = [(".".join(i.split(".")[:-1]), {"file": os.path.join(gui_symbol_path, i)}, 24) for i in os.listdir(gui_symbol_path)]
-    imgpaths.extend([(handle, svg, 18) for handle, svg in textures.iteritems()])
-    dpiset = [('ldpi', 0.75), ('mdpi', 1), ('hdpi', 1.5), ('xhdpi', 2), ('xxhdpi', 3), ('yota', 1)]
-    style_dpi = style.get_style_dict("canvas", {}, 0).values()[0].get("-x-mapsithme-dpi", "ldpi,mdpi,hdpi,xhdpi,xxhdpi").split(",")
-    for (dpiname, multiplier) in dpiset:
-        if dpiname in style_dpi:
-            texture_packer.pack_texture(imgpaths, multiplier, os.path.join(ddir, 'resources-'+dpiname))
 
     for k, v in visibility.iteritems():
         vis = k.split("|")
