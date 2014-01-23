@@ -1,4 +1,4 @@
-   Kothic  Map Renderer, patched for MWM use.
+Kothic  Map Renderer, patched for MWM use.
    
-    python src/komap.py -r mapswithme -s [path to repo]/data/styles/normal.mapcss -o [path to repo]/data/drules_proto.bin
+python src/komap.py -r mapswithme -s [path to repo]/data/styles/normal.mapcss -o [path to repo]/data/drules_proto
    
