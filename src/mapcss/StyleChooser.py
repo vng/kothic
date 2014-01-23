@@ -181,9 +181,10 @@ class StyleChooser:
                     x["object-id"] = oid
                     if oid == "::*":
                         hasall = True
-                if x.get("object-id") == ra["object-id"]:
-                    x.update(ra)
-                    break
+                else:
+                    if x.get("object-id") == ra["object-id"]:
+                        x.update(ra)
+                        break
             else:
                 if not hasall:
                     allinit.update(ra)
