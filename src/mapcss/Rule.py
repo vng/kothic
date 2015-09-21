@@ -52,24 +52,8 @@ class Rule():
                 subpart = res
         return subpart
 
-    def test_zoom(self, zoom):
-        return (zoom >= self.minZoom) and (zoom <= self.maxZoom)
-
     def get_compatible_types(self):
         return type_matches.get(self.subject, (self.subject,))
-
-    def get_interesting_tags(self, obj, zoom):
-        if obj:
-            if (self.subject != '') and not _test_feature_compatibility(obj, self.subject, {}):
-                return set()
-
-        if zoom and not self.test_zoom(zoom):
-            return set()
-
-        a = set()
-        for condition in self.conditions:
-            a.update(condition.get_interesting_tags())
-        return a
 
     def extract_tags(self):
         a = set()
@@ -78,30 +62,6 @@ class Rule():
             if "*" in a:
                 break
         return a
-
-    def get_numerics(self):
-        a = set()
-        for condition in self.conditions:
-            a.add(condition.get_numerics())
-        a.discard(False)
-        return a
-
-    def get_sql_hints(self, obj, zoom):
-        if obj:
-            if (self.subject != '') and not _test_feature_compatibility(obj, self.subject, {":area": "yes"}):
-                return set()
-        if not self.test_zoom(zoom):
-            return set()
-        a = set()
-        b = set()
-        for condition in self.conditions:
-            q = condition.get_sql()
-            if q:
-                if q[1]:
-                    a.add(q[0])
-                    b.add(q[1])
-        b = " AND ".join(b)
-        return a, b
 
 
 def _test_feature_compatibility(f1, f2, tags={}):

@@ -177,27 +177,6 @@ class MapCSS():
             d[x.get('object-id', '')].update(x)
         return d
 
-    def get_interesting_tags(self, type=None, zoom=None):
-        """
-        Get set of interesting tags.
-        """
-        tags = set()
-        for chooser in self.choosers:
-            tags.update(chooser.get_interesting_tags(type, zoom))
-        return tags
-
-    def get_sql_hints(self, type=None, zoom=None):
-        """
-        Get set of interesting tags.
-        """
-        hints = []
-        for chooser in self.choosers:
-            p = chooser.get_sql_hints(type, zoom)
-            if p:
-                if p[0] and p[1]:
-                    hints.append(p)
-        return hints
-
     def subst_variables(self, t):
         """Expects an array from parseDeclaration."""
         for k in t[0]:

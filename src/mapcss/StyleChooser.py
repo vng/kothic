@@ -88,31 +88,6 @@ class StyleChooser:
         self.compatible_types = set()
         self.has_evals = False
 
-    def get_numerics(self):
-        """
-        Returns a set of number-compared values.
-        """
-        a = set()
-        for r in self.ruleChains:
-            a.update(r.get_numerics())
-        a.discard(False)
-        return a
-
-    def get_interesting_tags(self, ztype, zoom):
-        """
-        Returns a set of tags that were used in here.
-        """
-        ### FIXME
-        a = set()
-        for r in self.ruleChains:
-            a.update(r.get_interesting_tags(ztype, zoom))
-        if a:  # FIXME: semi-illegal optimization, may wreck in future on tagless matches
-            for r in self.styles:
-                for c, b in r.iteritems():
-                    if type(b) == self.eval_type:
-                        a.update(b.extract_tags())
-        return a
-
     def extract_tags(self):
         a = set()
         for r in self.ruleChains:
@@ -130,29 +105,6 @@ class StyleChooser:
             a.clear()
             a.add("*")
         return a
-
-    def get_sql_hints(self, type, zoom):
-        """
-        Returns a set of tags that were used in here in form of SQL-hints.
-        """
-        a = set()
-        b = ""
-        needed = set(["width", "casing-width", "fill-color", "fill-image", "icon-image", "text", "extrude", "background-image", "background-color", "pattern-image", "shield-text"])
-
-        if not needed.isdisjoint(set(self.styles[0].keys())):
-            for r in self.ruleChains:
-                p = r.get_sql_hints(type, zoom)
-                if p:
-                    q = "(" + p[1] + ")"  # [t[1] for t in p]
-                    if q == "()":
-                        q = ""
-                    if b and q:
-                        b += " OR " + q
-                    else:
-                        b = q
-                    a.update(p[0])
-        # no need to check for eval's
-        return a, b
 
     def updateStyles(self, sl, ftype, tags, zoom, scale, zscale):
         # Are any of the ruleChains fulfilled?
