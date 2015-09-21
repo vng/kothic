@@ -27,7 +27,8 @@ from StyleChooser import StyleChooser
 from Condition import Condition
 
 
-NEEDED_KEYS = set(["width", "casing-width", "fill-color", "fill-image", "icon-image", "text", "extrude", "background-image", "background-color", "pattern-image", "shield-text", "symbol-shape"])
+NEEDED_KEYS = set(["width", "casing-width", "fill-color", "fill-image", "icon-image", "text", "extrude",
+                   "background-image", "background-color", "pattern-image", "shield-text", "symbol-shape"])
 
 
 WHITESPACE = re.compile(r'^ \s+ ', re.S | re.X)
@@ -88,6 +89,7 @@ CENTER = re.compile(r'^center$/i')
 HEX = re.compile(r'^#([0-9a-f]+)$/i')
 VARIABLE = re.compile(r'@([a-z][\w\d]*)')
 
+
 class MapCSS():
     def __init__(self, minscale=0, maxscale=19):
         """
@@ -99,6 +101,7 @@ class MapCSS():
         self.scalepair = (minscale, maxscale)
         self.choosers = []
         self.choosers_by_type = {}
+        self.choosers_by_type_and_tag = {}
         self.variables = {}
         self.style_loaded = False
 
@@ -114,7 +117,29 @@ class MapCSS():
         else:
             logging.error("unparsed zoom: %s" % s)
 
-    def get_style(self, type, tags={}, zoom=0, scale=1, zscale=.5, cache=True):
+    def build_choosers_tree(self, clname, type, tags={}):
+        if type not in self.choosers_by_type_and_tag:
+            self.choosers_by_type_and_tag[type] = {}
+        if clname not in self.choosers_by_type_and_tag[type]:
+            self.choosers_by_type_and_tag[type][clname] = set()
+        if type in self.choosers_by_type:
+            for chooser in self.choosers_by_type[type]:
+                for tag in chooser.extract_tags():
+                    if tag == "*" or tag in tags:
+                        if chooser not in self.choosers_by_type_and_tag[type][clname]:
+                            self.choosers_by_type_and_tag[type][clname].add(chooser)
+                        break
+
+    def restore_choosers_order(self, type):
+        ethalon_choosers = self.choosers_by_type[type]
+        for tag, choosers_for_tag in self.choosers_by_type_and_tag[type].items():
+            tmp = []
+            for ec in ethalon_choosers:
+                if ec in choosers_for_tag:
+                    tmp.append(ec)
+            self.choosers_by_type_and_tag[type][tag] = tmp
+
+    def get_style(self, clname, type, tags={}, zoom=0, scale=1, zscale=.5, cache=True):
         """
         Kothic styling API
         """
@@ -123,11 +148,11 @@ class MapCSS():
             if shash in self.cache["style"]:
                 return deepcopy(self.cache["style"][shash])
         style = []
-        if type in self.choosers_by_type:
-            for chooser in self.choosers_by_type[type]:
+        if type in self.choosers_by_type_and_tag:
+            choosers = self.choosers_by_type_and_tag[type][clname]
+            for chooser in choosers:
                 style = chooser.updateStyles(style, type, tags, zoom, scale, zscale)
         style = [x for x in style if x["object-id"] != "::*"]
-        st = []
         for x in style:
             for k, v in [('width', 0), ('casing-width', 0)]:
                 if k in x:
@@ -143,8 +168,8 @@ class MapCSS():
             self.cache["style"][shash] = deepcopy(style)
         return style
 
-    def get_style_dict(self, type, tags={}, zoom=0, scale=1, zscale=.5, olddict={}, cache=True):
-        r = self.get_style(type, tags, zoom, scale, zscale, cache)
+    def get_style_dict(self, clname, type, tags={}, zoom=0, scale=1, zscale=.5, olddict={}, cache=True):
+        r = self.get_style(clname, type, tags, zoom, scale, zscale, cache)
         d = olddict
         for x in r:
             if x.get('object-id', '') not in d:
@@ -175,16 +200,15 @@ class MapCSS():
 
     def subst_variables(self, t):
         """Expects an array from parseDeclaration."""
-	for k in t[0]:
+        for k in t[0]:
             t[0][k] = VARIABLE.sub(self.get_variable, t[0][k])
         return t
 
     def get_variable(self, m):
         name = m.group()[1:]
         if not name in self.variables:
-            logging.error("Variable not found: {}".format(name))
+            raise Exception("Variable not found: " + str(format(name)))
         return self.variables[name] if name in self.variables else m.group()
-
 
     def parse(self, css=None, clamp=True, stretch=1000, filename=None):
         """
@@ -197,122 +221,139 @@ class MapCSS():
             css = open(filename).read()
         if not self.style_loaded:
             self.choosers = []
+
         log = logging.getLogger('mapcss.parser')
         previous = 0  # what was the previous CSS word?
         sc = StyleChooser(self.scalepair)  # currently being assembled
-        css_orig = css
-        css = css.strip()
-        while (css):
 
-            # Class - :motorway, :builtup, :hover
-            if CLASS.match(css):
-                if previous == oDECLARATION:
-                    self.choosers.append(sc)
-                    sc = StyleChooser(self.scalepair)
+        stck = [] # filename, original, remained
+        stck.append([filename, css, css])
+        try:
+            while (len(stck) > 0):
+                css = stck[-1][1].lstrip() # remained
 
-                cond = CLASS.match(css).groups()[0]
-                log.debug("class found: %s" % (cond))
-                css = CLASS.sub("", css)
+                wasBroken = False
+                while (css):
+                    # Class - :motorway, :builtup, :hover
+                    if CLASS.match(css):
+                        if previous == oDECLARATION:
+                            self.choosers.append(sc)
+                            sc = StyleChooser(self.scalepair)
+                        cond = CLASS.match(css).groups()[0]
+                        log.debug("class found: %s" % (cond))
+                        css = CLASS.sub("", css)
+                        sc.addCondition(Condition('eq', ("::class", cond)))
+                        previous = oCONDITION
 
-                sc.addCondition(Condition('eq', ("::class", cond)))
-                previous = oCONDITION
+                    ## Not class - !.motorway, !.builtup, !:hover
+                    #elif NOT_CLASS.match(css):
+                        #if (previous == oDECLARATION):
+                            #self.choosers.append(sc)
+                            #sc = StyleChooser(self.scalepair)
+                        #cond = NOT_CLASS.match(css).groups()[0]
+                        #log.debug("not_class found: %s" % (cond))
+                        #css = NOT_CLASS.sub("", css)
+                        #sc.addCondition(Condition('ne', ("::class", cond)))
+                        #previous = oCONDITION
 
-            ## Not class - !.motorway, !.builtup, !:hover
-            #elif NOT_CLASS.match(css):
-                #if (previous == oDECLARATION):
-                    #self.choosers.append(sc)
-                    #sc = StyleChooser(self.scalepair)
+                    # Zoom
+                    elif ZOOM.match(css):
+                        if (previous != oOBJECT & previous != oCONDITION):
+                            sc.newObject()
+                        cond = ZOOM.match(css).groups()[0]
+                        log.debug("zoom found: %s" % (cond))
+                        css = ZOOM.sub("", css)
+                        sc.addZoom(self.parseZoom(cond))
+                        previous = oZOOM
 
-                #cond = NOT_CLASS.match(css).groups()[0]
-                #log.debug("not_class found: %s" % (cond))
-                #css = NOT_CLASS.sub("", css)
-                #sc.addCondition(Condition('ne', ("::class", cond)))
-                #previous = oCONDITION
+                    # Grouping - just a comma
+                    elif GROUP.match(css):
+                        css = GROUP.sub("", css)
+                        sc.newGroup()
+                        previous = oGROUP
 
-            # Zoom
-            elif ZOOM.match(css):
-                if (previous != oOBJECT & previous != oCONDITION):
-                    sc.newObject()
+                    # Condition - [highway=primary]
+                    elif CONDITION.match(css):
+                        if (previous == oDECLARATION):
+                            self.choosers.append(sc)
+                            sc = StyleChooser(self.scalepair)
+                        if (previous != oOBJECT) and (previous != oZOOM) and (previous != oCONDITION):
+                            sc.newObject()
+                        cond = CONDITION.match(css).groups()[0]
+                        log.debug("condition found: %s" % (cond))
+                        css = CONDITION.sub("", css)
+                        sc.addCondition(parseCondition(cond))
+                        previous = oCONDITION
 
-                cond = ZOOM.match(css).groups()[0]
-                log.debug("zoom found: %s" % (cond))
-                css = ZOOM.sub("", css)
-                sc.addZoom(self.parseZoom(cond))
-                previous = oZOOM
+                    # Object - way, node, relation
+                    elif OBJECT.match(css):
+                        if (previous == oDECLARATION):
+                            self.choosers.append(sc)
+                            sc = StyleChooser(self.scalepair)
+                        obj = OBJECT.match(css).groups()[0]
+                        log.debug("object found: %s" % (obj))
+                        css = OBJECT.sub("", css)
+                        sc.newObject(obj)
+                        previous = oOBJECT
 
-            # Grouping - just a comma
-            elif GROUP.match(css):
-                css = GROUP.sub("", css)
-                sc.newGroup()
-                previous = oGROUP
+                    # Declaration - {...}
+                    elif DECLARATION.match(css):
+                        decl = DECLARATION.match(css).groups()[0]
+                        log.debug("declaration found: %s" % (decl))
+                        sc.addStyles(self.subst_variables(parseDeclaration(decl)))
+                        css = DECLARATION.sub("", css)
+                        previous = oDECLARATION
 
-            # Condition - [highway=primary]
-            elif CONDITION.match(css):
-                if (previous == oDECLARATION):
-                    self.choosers.append(sc)
-                    sc = StyleChooser(self.scalepair)
-                if (previous != oOBJECT) and (previous != oZOOM) and (previous != oCONDITION):
-                    sc.newObject()
-                cond = CONDITION.match(css).groups()[0]
-                log.debug("condition found: %s" % (cond))
-                css = CONDITION.sub("", css)
-                sc.addCondition(parseCondition(cond))
-                previous = oCONDITION
+                    # CSS comment
+                    elif COMMENT.match(css):
+                        log.debug("comment found")
+                        css = COMMENT.sub("", css)
 
-            # Object - way, node, relation
-            elif OBJECT.match(css):
-                if (previous == oDECLARATION):
-                    self.choosers.append(sc)
-                    sc = StyleChooser(self.scalepair)
-                obj = OBJECT.match(css).groups()[0]
-                log.debug("object found: %s" % (obj))
-                css = OBJECT.sub("", css)
-                sc.newObject(obj)
-                previous = oOBJECT
+                    # @import("filename.css");
+                    elif IMPORT.match(css):
+                        log.debug("import found")
+                        import_filename = os.path.join(basepath, IMPORT.match(css).groups()[0])
+                        try:
+                            css = IMPORT.sub("", css)
+                            import_text = open(import_filename, "r").read()
+                            stck[-1][1] = css # store remained part
+                            stck.append([import_filename, import_text, import_text])
+                            wasBroken = True
+                            break
+                        except IOError as e:
+                            raise Exception("Cannot import file " + import_filename + "\n" + str(e))
 
-            # Declaration - {...}
-            elif DECLARATION.match(css):
-                decl = DECLARATION.match(css).groups()[0]
-                log.debug("declaration found: %s" % (decl))
-                sc.addStyles(self.subst_variables(parseDeclaration(decl)))
-                css = DECLARATION.sub("", css)
-                previous = oDECLARATION
+                    # Variables
+                    elif VARIABLE_SET.match(css):
+                        name = VARIABLE_SET.match(css).groups()[0]
+                        log.debug("variable set found: %s" % name)
+                        self.variables[name] = VARIABLE_SET.match(css).groups()[1]
+                        css = VARIABLE_SET.sub("", css)
+                        previous = oVARIABLE_SET
 
-            # CSS comment
-            elif COMMENT.match(css):
-                log.debug("comment found")
-                css = COMMENT.sub("", css)
+                    # Unknown pattern
+                    elif UNKNOWN.match(css):
+                        raise Exception("Unknown construction: " + UNKNOWN.match(css).group())
 
-            # @import("filename.css");
-            elif IMPORT.match(css):
-                log.debug("import found")
-                filename = os.path.join(basepath, IMPORT.match(css).groups()[0])
-                try:
-                    css = IMPORT.sub("", css)
-                    import_text = open(filename, "r").read().strip()
-                    css = import_text + css
-                except IOError as e:
-			log.warning("cannot import file %s: %s" % (filename, e))
+                    # Must be unreacheable
+                    else:
+                        raise Exception("Unexpected construction: " + css)
 
-            elif VARIABLE_SET.match(css):
-                name = VARIABLE_SET.match(css).groups()[0]
-                log.debug("variable set found: %s" % name)
-                self.variables[name] = VARIABLE_SET.match(css).groups()[1]
-                css = VARIABLE_SET.sub("", css)
-                previous = oVARIABLE_SET
+                if not wasBroken:
+                    stck.pop()
 
-            # Unknown pattern
-            elif UNKNOWN.match(css):
-                log.warning("unknown thing found on line %s: %s" % (unicode(css_orig[:-len(unicode(css))]).count("\n") + 1, UNKNOWN.match(css).group()))
-                css = UNKNOWN.sub("", css)
+            if (previous == oDECLARATION):
+                self.choosers.append(sc)
+                sc = StyleChooser(self.scalepair)
 
-            else:
-                log.warning("choked on: %s" % (css))
-                return
+        except Exception as e:
+            filename = stck[-1][0] # filename
+            css_orig = stck[-1][2] # original
+            css = stck[-1][1] # remained
+            line = unicode(css_orig[:-len(unicode(css))]).count("\n") + 1
+            msg = str(e) + "\nFile: " + filename + "\nLine: " + str(line)
+            raise Exception(msg)
 
-        if (previous == oDECLARATION):
-            self.choosers.append(sc)
-            sc = StyleChooser(self.scalepair)
         try:
             if clamp:
                 "clamp z-indexes, so they're tightly following integers"
@@ -331,9 +372,9 @@ class MapCSS():
                                 stylez['z-index'] = 1. * res / len(zindex) * stretch
                             else:
                                 stylez['z-index'] = res
-
         except TypeError:
             pass
+
         for chooser in self.choosers:
             for t in chooser.compatible_types:
                 if t not in self.choosers_by_type:
@@ -344,10 +385,12 @@ class MapCSS():
 
 def parseCondition(s):
     log = logging.getLogger('mapcss.parser.condition')
+
     if CONDITION_TRUE.match(s):
         a = CONDITION_TRUE.match(s).groups()
         log.debug("condition true: %s" % (a[0]))
         return Condition('true', a)
+
     if CONDITION_invTRUE.match(s):
         a = CONDITION_invTRUE.match(s).groups()
         log.debug("condition invtrue: %s" % (a[0]))
@@ -404,16 +447,14 @@ def parseCondition(s):
         return Condition('eq', a)
 
     else:
-        log.warning("condition UNKNOWN: %s" % (s))
+        raise Exception("condition UNKNOWN: " + s)
 
 
 def parseDeclaration(s):
     """
     Parse declaration string into list of styles
     """
-    styles = []
     t = {}
-
     for a in s.split(';'):
         # if ((o=ASSIGNMENT_EVAL.exec(a)))   { t[o[1].replace(DASH,'_')]=new Eval(o[2]); }
         if ASSIGNMENT.match(a):

@@ -43,12 +43,12 @@ class Eval():
             for t in x:
                 q = x
             return 0
-        tags = set([])
-        # print self.expr_text
 
+        # print self.expr_text
+        tags = set([])
         a = eval(self.expr, {}, {
-                 "tag": lambda x: max([tags.add(x), " "]),
-                 "prop": lambda x: "",
+                 "tag": lambda x: max([tags.add(x), 0]),
+                 "prop": lambda x: 0,
                  "num": lambda x: 0,
                  "metric": fake_compute,
                  "zmetric": fake_compute,
@@ -63,11 +63,13 @@ class Eval():
         """
         Compute this eval()
         """
+        """
         for k, v in tags.iteritems():
             try:
-                tag[k] = float(v)
+                tags[k] = float(v)
             except:
                 pass
+        """
         try:
             return str(eval(self.expr, {}, {
                             "tag": lambda x: tags.get(x, ""),
@@ -165,6 +167,8 @@ def m_metric(x, t):
                 return float(x[0:-1]) * float(t)
         except:
             return ""
+
+
 # def str(x):
     #"""
     # str() MapCSS feature

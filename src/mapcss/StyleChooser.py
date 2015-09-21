@@ -20,13 +20,15 @@ from Rule import Rule
 from webcolors.webcolors import whatever_to_cairo as colorparser
 from webcolors.webcolors import cairo_to_hex
 from Eval import Eval
+from Condition import  *
 
+TYPE_EVAL = type(Eval())
 
 def make_nice_style(r):
     ra = {}
     for a, b in r.iteritems():
         "checking and nicifying style table"
-        if type(b) == type(Eval()):
+        if type(b) == TYPE_EVAL:
             ra[a] = b
         elif "color" in a:
             "parsing color value to 3-tuple"
@@ -80,7 +82,7 @@ class StyleChooser:
     def __init__(self, scalepair):
         self.ruleChains = []
         self.styles = []
-        self.eval_type = type(Eval())
+        self.eval_type = TYPE_EVAL
         self.scalepair = scalepair
         self.selzooms = None
         self.compatible_types = set()
@@ -109,6 +111,24 @@ class StyleChooser:
                 for c, b in r.iteritems():
                     if type(b) == self.eval_type:
                         a.update(b.extract_tags())
+        return a
+
+    def extract_tags(self):
+        a = set()
+        for r in self.ruleChains:
+            a.update(r.extract_tags())
+            if "*" in a:
+                a.clear()
+                a.add("*")
+                break
+        if self.has_evals and "*" not in a:
+            for s in self.styles:
+                for v in s.values():
+                    if type(v) == self.eval_type:
+                        a.update(v.extract_tags())
+        if "*" in a or len(a) == 0:
+            a.clear()
+            a.add("*")
         return a
 
     def get_sql_hints(self, type, zoom):
@@ -189,6 +209,7 @@ class StyleChooser:
                 if not hasall:
                     allinit.update(ra)
                     sl.append(allinit)
+
         return sl
 
     def testChain(self, chain, obj, tags, zoom):
@@ -208,6 +229,7 @@ class StyleChooser:
         pass
 
     def newObject(self, e=''):
+        # print "newRule"
         """
         adds into the current ruleChain (starting a new Rule)
         """
@@ -217,6 +239,7 @@ class StyleChooser:
         self.ruleChains.append(rule)
 
     def addZoom(self, z):
+        # print "addZoom ", float(z[0]), ", ", float(z[1])
         """
         adds into the current ruleChain (existing Rule)
         """
@@ -224,12 +247,15 @@ class StyleChooser:
         self.ruleChains[-1].maxZoom = float(z[1])
 
     def addCondition(self, c):
+        # print "addCondition ", c
         """
         adds into the current ruleChain (existing Rule)
         """
+        c = OptimizeCondition(c)
         self.ruleChains[-1].conditions.append(c)
 
     def addStyles(self, a):
+        # print "addStyle ", a
         """
         adds to this.styles
         """

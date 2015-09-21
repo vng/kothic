@@ -24,6 +24,81 @@ for a, b in INVERSIONS.iteritems():
 INVERSIONS.update(in2)
 del in2
 
+# Fast conditions
+
+class EqConditionDD:
+    def __init__(self, params):
+        self.value = params[1]
+    def extract_tags(self):
+        return set(["*"])
+    def test(self, tags):
+        return self.value
+
+class EqCondition:
+    def __init__(self, params):
+        self.tag = params[0]
+        self.value = params[1]
+    def extract_tags(self):
+        return set([self.tag])
+    def test(self, tags):
+        if self.tag in tags:
+            return tags[self.tag] == self.value
+        else:
+            return False
+
+class NotEqCondition:
+    def __init__(self, params):
+        self.tag = params[0]
+        self.value = params[1]
+    def extract_tags(self):
+        return set([self.tag])
+    def test(self, tags):
+        if self.tag in tags:
+            return tags[self.tag] != self.value
+        else:
+            return False
+
+class SetCondition:
+    def __init__(self, params):
+        self.tag = params[0]
+    def extract_tags(self):
+        return set([self.tag])
+    def test(self, tags):
+        if self.tag in tags:
+            return tags[self.tag] != ''
+        return False
+
+class UnsetCondition:
+    def __init__(self, params):
+        self.tag = params[0]
+    def extract_tags(self):
+        return set([self.tag])
+    def test(self, tags):
+        if self.tag in tags:
+            return tags[self.tag] == ''
+        return True
+
+class TrueCondition:
+    def __init__(self, params):
+        self.tag = params[0]
+    def extract_tags(self):
+        return set([self.tag])
+    def test(self, tags):
+        if self.tag in tags:
+            return tags[self.tag] == 'yes'
+        return False
+
+class UntrueCondition:
+    def __init__(self, params):
+        self.tag = params[0]
+    def extract_tags(self):
+        return set([self.tag])
+    def test(self, tags):
+        if self.tag in tags:
+            return tags[self.tag] == 'no'
+        return False
+
+# Slow condition
 
 class Condition:
     def __init__(self, typez, params):
@@ -33,12 +108,16 @@ class Condition:
         self.params = params       # e.g. ('highway','primary')
         if typez == "regex":
             self.regex = re.compile(self.params[0], re.I)
-
         self.compiled_regex = ""
 
     def get_interesting_tags(self):
         if self.params[0][:2] == "::":
             return []
+        return set([self.params[0]])
+
+    def extract_tags(self):
+        if self.params[0][:2] == "::" or self.type == "regex":
+            return set(["*"]) # unknown
         return set([self.params[0]])
 
     def get_numerics(self):
@@ -219,13 +298,32 @@ class Condition:
 
         return self, c2
 
-
 def Number(tt):
     """
     Wrap float() not to produce exceptions
     """
-
     try:
         return float(tt)
     except ValueError:
         return 0
+
+# Some conditions we can optimize by using "python polymorthism"
+
+def OptimizeCondition(condition):
+    if (condition.type == "eq"):
+        if (condition.params[0][:2] == "::"):
+            return EqConditionDD(condition.params)
+        else:
+            return EqCondition(condition.params)
+    elif (condition.type == "ne"):
+        return NotEqCondition(condition.params)
+    elif (condition.type == "set"):
+        return SetCondition(condition.params)
+    elif (condition.type == "unset"):
+        return UnsetCondition(condition.params)
+    elif (condition.type == "true"):
+        return TrueCondition(condition.params)
+    elif (condition.type == "untrue"):
+        return UntrueCondition(condition.params)
+    else:
+        return condition

@@ -44,7 +44,6 @@ class Rule():
             return False
 
         subpart = "::default"
-
         for condition in self.conditions:
             res = condition.test(tags)
             if not res:
@@ -70,6 +69,14 @@ class Rule():
         a = set()
         for condition in self.conditions:
             a.update(condition.get_interesting_tags())
+        return a
+
+    def extract_tags(self):
+        a = set()
+        for condition in self.conditions:
+            a.update(condition.extract_tags())
+            if "*" in a:
+                break
         return a
 
     def get_numerics(self):
