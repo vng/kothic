@@ -110,6 +110,7 @@ def komap_mapswithme(options):
         cltags = classificator[cl]
         cltags["name"] = "name"
         cltags["addr:housenumber"] = "addr:housenumber"
+        cltags["addr:housename"] = "addr:housename"
         cltags["ref"] = "ref"
         cltags["int_name"] = "int_name"
         cltags["addr:flats"] = "addr:flats"
@@ -285,6 +286,8 @@ def komap_mapswithme(options):
                                 dr_cur_subtext.offset_y = int(sp.get('text-offset-y', sp.get('text-offset', 0)))
                             if 'text-offset-x' in sp:
                                 dr_cur_subtext.offset_x = int(sp.get('text-offset-x', 0))
+                            if 'text' in sp:
+                                dr_cur_subtext.text = sp.get('text')
                             has_text.pop()
                         dr_text.priority = min(19000, (base_z + int(st.get('z-index', 0))))
                         has_text = None
