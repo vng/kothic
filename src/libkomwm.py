@@ -286,7 +286,7 @@ def komap_mapswithme(options):
                                 dr_cur_subtext.offset_y = int(sp.get('text-offset-y', sp.get('text-offset', 0)))
                             if 'text-offset-x' in sp:
                                 dr_cur_subtext.offset_x = int(sp.get('text-offset-x', 0))
-                            if 'text' in sp:
+                            if 'text' in sp and sp.get('text') != 'name':
                                 dr_cur_subtext.text = sp.get('text')
                             has_text.pop()
                         dr_text.priority = min(19000, (base_z + int(st.get('z-index', 0))))
