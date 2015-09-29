@@ -1,4 +1,3 @@
-from drules_struct_pb2 import *
 from mapcss import MapCSS
 from optparse import OptionParser
 import os
@@ -8,6 +7,16 @@ import mapcss.webcolors
 whatever_to_hex = mapcss.webcolors.webcolors.whatever_to_hex
 whatever_to_cairo = mapcss.webcolors.webcolors.whatever_to_cairo
 
+# If path to the protobuf EGG is specified then apply it before import drules_struct_pb2
+PROTOBUF_EGG_PATH = os.environ.get("PROTOBUF_EGG_PATH")
+if PROTOBUF_EGG_PATH:
+    # another version of protobuf may be installed, override it
+    for i in range(len(sys.path)):
+        if -1 != sys.path[i].find("protobuf-"):
+            sys.path[i] = PROTOBUF_EGG_PATH
+    sys.path.append(PROTOBUF_EGG_PATH)
+
+from drules_struct_pb2 import *
 
 WIDTH_SCALE = 1.0
 
