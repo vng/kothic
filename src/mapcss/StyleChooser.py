@@ -123,6 +123,21 @@ class StyleChooser:
 
         return rule.runtime_conditions
 
+    def isCorrespondingRule(self, filter_by_runtime_conditions, rule):
+        # If rule can be applied according to runtime conditions, then
+        # function return true, else it returns false
+        if len(rule.runtime_conditions) == 0:
+            return True
+        if filter_by_runtime_conditions is None:
+            return True
+        if filter_by_runtime_conditions == rule.runtime_conditions:
+            return True
+        # Actually we should check rule.runtime_conditions is a subset of filter_by_runtime_conditions
+        for r in rule.runtime_conditions:
+            if r not in filter_by_runtime_conditions:
+                return False
+        return True
+
     def updateStyles(self, sl, ftype, tags, zoom, xscale, zscale, filter_by_runtime_conditions):
         # Are any of the ruleChains fulfilled?
         if self.selzooms:
@@ -140,7 +155,7 @@ class StyleChooser:
         rule = rule_and_object_id[0]
         object_id = rule_and_object_id[1]
 
-        if filter_by_runtime_conditions and (filter_by_runtime_conditions != rule.runtime_conditions):
+        if not self.isCorrespondingRule(filter_by_runtime_conditions, rule):
             return sl
 
         for r in self.styles:
