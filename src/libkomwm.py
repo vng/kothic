@@ -60,7 +60,6 @@ def komap_mapswithme(options):
         for colorLine in colors_in_file:
             colors.add(int(colorLine))
         colors_in_file.close()
-    colors_file = open(colors_file_name, "w")
 
     patterns = []
     def addPattern(dashes):
@@ -73,7 +72,6 @@ def komap_mapswithme(options):
         for patternsLine in patterns_in_file:
             addPattern([float(x) for x in patternsLine.split()])
         patterns_in_file.close()
-    patterns_file = open(patterns_file_name, "w")
 
     for row in csv.reader(open(os.path.join(ddir, 'mapcss-mapping.csv')), delimiter=';'):
         cl = row[0].replace("|", "-")
@@ -402,14 +400,16 @@ def komap_mapswithme(options):
     visibility_file.close()
     classificator_file.close()
 
+    colors_file = open(colors_file_name, "w")
     for c in sorted(colors):
         colors_file.write("%d\n" % (c))
     colors_file.close()
 
+    patterns_file = open(patterns_file_name, "w")
     for p in patterns:
         patterns_file.write("%s\n" % (' '.join(str(elem) for elem in p)))
     patterns_file.close()
-    
+
 # Main
 
 try:
