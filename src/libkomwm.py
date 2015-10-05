@@ -21,13 +21,15 @@ from drules_struct_pb2 import *
 WIDTH_SCALE = 1.0
 
 
-def mwm_encode_color(st, prefix='', default='black'):
+def mwm_encode_color(colors, st, prefix='', default='black'):
     if prefix:
         prefix += "-"
     opacity = hex(255 - int(255 * float(st.get(prefix + "opacity", 1))))
     color = whatever_to_hex(st.get(prefix + 'color', default))
     color = color[1] + color[1] + color[3] + color[3] + color[5] + color[5]
-    return int(opacity + color, 16)
+    result = int(opacity + color, 16)
+    colors.add(result)
+    return result
 
 def mwm_encode_image(st, prefix='icon', bgprefix='symbol'):
     if prefix:
@@ -50,6 +52,27 @@ def komap_mapswithme(options):
 
     # Build classificator tree from mapcss-mapping.csv file
     types_file = open(os.path.join(ddir, 'types.txt'), "w")
+
+    colors_file_name = os.path.join(ddir, 'colors.txt')
+    colors = set()
+    if os.path.exists(colors_file_name):
+        colors_in_file = open(colors_file_name, "r")
+        for colorLine in colors_in_file:
+            colors.add(int(colorLine))
+        colors_in_file.close()
+
+    patterns = []
+    def addPattern(dashes):
+        if dashes and dashes not in patterns:
+            patterns.append(dashes)
+
+    patterns_file_name = os.path.join(ddir, 'patterns.txt')
+    if os.path.exists(patterns_file_name):
+        patterns_in_file = open(patterns_file_name, "r")
+        for patternsLine in patterns_in_file:
+            addPattern([float(x) for x in patternsLine.split()])
+        patterns_in_file.close()
+
     for row in csv.reader(open(os.path.join(ddir, 'mapcss-mapping.csv')), delimiter=';'):
         cl = row[0].replace("|", "-")
         pairs = [i.strip(']').split("=") for i in row[1].split(',')[0].split('[')]
@@ -211,10 +234,11 @@ def komap_mapswithme(options):
                         if st.get('casing-linecap', 'butt') == 'butt':
                             dr_line = LineRuleProto()
                             dr_line.width = (st.get('width', 0) * WIDTH_SCALE) + (st.get('casing-width') * WIDTH_SCALE * 2)
-                            dr_line.color = mwm_encode_color(st, "casing")
+                            dr_line.color = mwm_encode_color(colors, st, "casing")
                             dr_line.priority = min(int(st.get('z-index', 0) + 999), 20000)
                             dashes = st.get('casing-dashes', st.get('dashes', []))
                             dr_line.dashdot.dd.extend(dashes)
+                            addPattern(dr_line.dashdot.dd)
                             dr_line.cap = dr_linecaps.get(st.get('casing-linecap', 'butt'), BUTTCAP)
                             dr_line.join = dr_linejoins.get(st.get('casing-linejoin', 'round'), ROUNDJOIN)
                             dr_element.lines.extend([dr_line])
@@ -223,7 +247,7 @@ def komap_mapswithme(options):
                         # if st.get('casing-linecap', st.get('linecap', 'round')) != 'butt':
                         #     dr_line = LineRuleProto()
                         #     dr_line.width = (st.get('width', 0) * WIDTH_SCALE) + (st.get('casing-width') * WIDTH_SCALE * 2)
-                        #     dr_line.color = mwm_encode_color(st, "casing")
+                        #     dr_line.color = mwm_encode_color(colors, st, "casing")
                         #     dr_line.priority = -15000
                         #     dashes = st.get('casing-dashes', st.get('dashes', []))
                         #     dr_line.dashdot.dd.extend(dashes)
@@ -235,9 +259,10 @@ def komap_mapswithme(options):
                         if st.get('width'):
                             dr_line = LineRuleProto()
                             dr_line.width = (st.get('width', 0) * WIDTH_SCALE)
-                            dr_line.color = mwm_encode_color(st)
+                            dr_line.color = mwm_encode_color(colors, st)
                             for i in st.get('dashes', []):
                                 dr_line.dashdot.dd.extend([max(float(i), 1) * WIDTH_SCALE])
+                            addPattern(dr_line.dashdot.dd)
                             dr_line.cap = dr_linecaps.get(st.get('linecap', 'butt'), BUTTCAP)
                             dr_line.join = dr_linejoins.get(st.get('linejoin', 'round'), ROUNDJOIN)
                             dr_line.priority = min((int(st.get('z-index', 0)) + 1000), 20000)
@@ -254,9 +279,9 @@ def komap_mapswithme(options):
                             dr_element.lines.extend([dr_line])
                         if st.get('shield-font-size'):
                             dr_element.shield.height = int(st.get('shield-font-size', 10))
-                            dr_element.shield.color = mwm_encode_color(st, "shield-text")
+                            dr_element.shield.color = mwm_encode_color(colors, st, "shield-text")
                             if st.get('shield-text-halo-radius', 0) != 0:
-                                dr_element.shield.stroke_color = mwm_encode_color(st, "shield-text-halo", "white")
+                                dr_element.shield.stroke_color = mwm_encode_color(colors, st, "shield-text-halo", "white")
                             dr_element.shield.priority = min(19100, (16000 + int(st.get('z-index', 0))))
 
                     if has_icons:
@@ -269,7 +294,7 @@ def komap_mapswithme(options):
                             has_icons = False
                         if st.get('symbol-shape'):
                             dr_element.circle.radius = float(st.get('symbol-size'))
-                            dr_element.circle.color = mwm_encode_color(st, 'symbol-fill')
+                            dr_element.circle.color = mwm_encode_color(colors, st, 'symbol-fill')
                             dr_element.circle.priority = min(19000, (14000 + int(st.get('z-index', 0))))
                             has_icons = False
 
@@ -288,9 +313,9 @@ def komap_mapswithme(options):
                             if len(has_text) == 2:
                                 dr_cur_subtext = dr_text.secondary
                             dr_cur_subtext.height = int(float(sp.get('font-size', "10").split(",")[0]))
-                            dr_cur_subtext.color = mwm_encode_color(sp, "text")
+                            dr_cur_subtext.color = mwm_encode_color(colors, sp, "text")
                             if st.get('text-halo-radius', 0) != 0:
-                                dr_cur_subtext.stroke_color = mwm_encode_color(sp, "text-halo", "white")
+                                dr_cur_subtext.stroke_color = mwm_encode_color(colors, sp, "text-halo", "white")
                             if 'text-offset' in sp or 'text-offset-y' in sp:
                                 dr_cur_subtext.offset_y = int(sp.get('text-offset-y', sp.get('text-offset', 0)))
                             if 'text-offset-x' in sp:
@@ -303,7 +328,7 @@ def komap_mapswithme(options):
 
                     if has_fills:
                         if ('fill-color' in st) and (float(st.get('fill-opacity', 1)) > 0):
-                            dr_element.area.color = mwm_encode_color(st, "fill")
+                            dr_element.area.color = mwm_encode_color(colors, st, "fill")
                             if st.get('fill-position', 'foreground') == 'background':
                                 if 'z-index' not in st:
                                     bgpos -= 1
@@ -374,6 +399,16 @@ def komap_mapswithme(options):
 
     visibility_file.close()
     classificator_file.close()
+
+    colors_file = open(colors_file_name, "w")
+    for c in sorted(colors):
+        colors_file.write("%d\n" % (c))
+    colors_file.close()
+
+    patterns_file = open(patterns_file_name, "w")
+    for p in patterns:
+        patterns_file.write("%s\n" % (' '.join(str(elem) for elem in p)))
+    patterns_file.close()
 
 # Main
 
