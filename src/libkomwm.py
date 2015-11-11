@@ -21,6 +21,15 @@ from drules_struct_pb2 import *
 WIDTH_SCALE = 1.0
 
 
+def to_boolean(s):
+    s = s.lower()
+    if s == "true" or s == "yes":
+        return True, True # Valid, True
+    elif s == "false" or s == "no":
+        return True, False # Valid, False
+    else:
+        return False, False # Invalid
+
 def mwm_encode_color(colors, st, prefix='', default='black'):
     if prefix:
         prefix += "-"
@@ -322,6 +331,10 @@ def komap_mapswithme(options):
                                 dr_cur_subtext.offset_x = int(sp.get('text-offset-x', 0))
                             if 'text' in sp and sp.get('text') != 'name':
                                 dr_cur_subtext.text = sp.get('text')
+                            if 'text-optional' in sp:
+                                is_valid, value = to_boolean(sp.get('text-optional', ''))
+                                if is_valid:
+                                    dr_cur_subtext.is_optional = value
                             has_text.pop()
                         dr_text.priority = min(19000, (base_z + int(st.get('z-index', 0))))
                         has_text = None
