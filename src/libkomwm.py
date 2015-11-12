@@ -300,6 +300,8 @@ def komap_mapswithme(options):
                             icon = mwm_encode_image(st)
                             dr_element.symbol.name = icon[0]
                             dr_element.symbol.priority = min(19100, (16000 + int(st.get('z-index', 0))))
+                            if 'icon-min-distance' in st:
+                                dr_element.symbol.min_distance = int(st.get('icon-min-distance', 0))
                             has_icons = False
                         if st.get('symbol-shape'):
                             dr_element.circle.radius = float(st.get('symbol-size'))
