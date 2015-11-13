@@ -292,6 +292,8 @@ def komap_mapswithme(options):
                             if st.get('shield-text-halo-radius', 0) != 0:
                                 dr_element.shield.stroke_color = mwm_encode_color(colors, st, "shield-text-halo", "white")
                             dr_element.shield.priority = min(19100, (16000 + int(st.get('z-index', 0))))
+                            if st.get('shield-min-distance', 0) != 0:
+                                dr_element.shield.min_distance = int(st.get('shield-min-distance', 0))
 
                     if has_icons:
                         if st.get('icon-image'):
