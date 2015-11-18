@@ -64,6 +64,7 @@ SET_TAG = re.compile(r'^ \s* set \s+(\S+)\s* = \s*          (.+?) \s*           
 SET_TAG_TRUE = re.compile(r'^ \s* set \s+(\S+)\s* $', re.I | re.S | re.X)
 EXIT = re.compile(r'^ \s* exit \s* $', re.I | re.S | re.X)
 
+oNONE = 0
 oZOOM = 2
 oGROUP = 3
 oCONDITION = 4
@@ -200,7 +201,7 @@ class MapCSS():
             self.choosers = []
 
         log = logging.getLogger('mapcss.parser')
-        previous = 0  # what was the previous CSS word?
+        previous = oNONE  # what was the previous CSS word?
         sc = StyleChooser(self.scalepair)  # currently being assembled
 
         stck = [] # filename, original, remained
@@ -282,6 +283,8 @@ class MapCSS():
 
                     # Declaration - {...}
                     elif DECLARATION.match(css):
+                        if previous == oDECLARATION or previous == oNONE:
+                            raise Exception("Declaration without conditions")
                         decl = DECLARATION.match(css).groups()[0]
                         log.debug("declaration found: %s" % (decl))
                         sc.addStyles(self.subst_variables(parseDeclaration(decl)))
