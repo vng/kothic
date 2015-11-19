@@ -27,7 +27,7 @@ NEEDED_KEYS = set(["width", "casing-width", "fill-color", "fill-image", "icon-im
 
 WHITESPACE = re.compile(r'^ \s+ ', re.S | re.X)
 
-COMMENT = re.compile(r'^ \/\* .+? \*\/ \s* ', re.S | re.X)
+COMMENT = re.compile(r'^ \/\* .*? \*\/ \s* ', re.S | re.X)
 CLASS = re.compile(r'^ ([\.:]:?[*\w]+) \s* ', re.S | re.X)
 #NOT_CLASS = re.compile(r'^ !([\.:]\w+) \s* ', re.S | re.X)
 ZOOM = re.compile(r'^ \| \s* z([\d\-]+) \s* ', re.I | re.S | re.X)
