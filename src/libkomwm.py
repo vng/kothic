@@ -34,8 +34,7 @@ def mwm_encode_color(colors, st, prefix='', default='black'):
     if prefix:
         prefix += "-"
     opacity = hex(255 - int(255 * float(st.get(prefix + "opacity", 1))))
-    color = whatever_to_hex(st.get(prefix + 'color', default))
-    color = color[1] + color[1] + color[3] + color[3] + color[5] + color[5]
+    color = whatever_to_hex(st.get(prefix + 'color', default))[1:]
     result = int(opacity + color, 16)
     colors.add(result)
     return result
