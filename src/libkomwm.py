@@ -243,7 +243,10 @@ def komap_mapswithme(options):
                             dr_line = LineRuleProto()
                             dr_line.width = (st.get('width', 0) * WIDTH_SCALE) + (st.get('casing-width') * WIDTH_SCALE * 2)
                             dr_line.color = mwm_encode_color(colors, st, "casing")
-                            dr_line.priority = min(int(st.get('z-index', 0) + 999), 20000)
+                            if 'casing-line-priority' in st:
+                                dr_line.priority = int(st.get('casing-line-priority'))
+                            else:
+                                dr_line.priority = min(int(st.get('z-index', 0) + 999), 20000)
                             dashes = st.get('casing-dashes', st.get('dashes', []))
                             dr_line.dashdot.dd.extend(dashes)
                             addPattern(dr_line.dashdot.dd)
@@ -273,7 +276,10 @@ def komap_mapswithme(options):
                             addPattern(dr_line.dashdot.dd)
                             dr_line.cap = dr_linecaps.get(st.get('linecap', 'butt'), BUTTCAP)
                             dr_line.join = dr_linejoins.get(st.get('linejoin', 'round'), ROUNDJOIN)
-                            dr_line.priority = min((int(st.get('z-index', 0)) + 1000), 20000)
+                            if 'line-priority' in st:
+                                dr_line.priority = int(st.get('line-priority'))
+                            else:
+                                dr_line.priority = min((int(st.get('z-index', 0)) + 1000), 20000)
                             dr_element.lines.extend([dr_line])
                         if st.get('pattern-image'):
                             dr_line = LineRuleProto()
@@ -283,14 +289,20 @@ def komap_mapswithme(options):
                             dr_line.pathsym.name = icon[0]
                             dr_line.pathsym.step = float(st.get('pattern-spacing', 0)) - 16
                             dr_line.pathsym.offset = st.get('pattern-offset', 0)
-                            dr_line.priority = int(st.get('z-index', 0)) + 1000
+                            if 'line-priority' in st:
+                                dr_line.priority = int(st.get('line-priority'))
+                            else:
+                                dr_line.priority = int(st.get('z-index', 0)) + 1000
                             dr_element.lines.extend([dr_line])
                         if st.get('shield-font-size'):
                             dr_element.shield.height = int(st.get('shield-font-size', 10))
                             dr_element.shield.color = mwm_encode_color(colors, st, "shield-text")
                             if st.get('shield-text-halo-radius', 0) != 0:
                                 dr_element.shield.stroke_color = mwm_encode_color(colors, st, "shield-text-halo", "white")
-                            dr_element.shield.priority = min(19100, (16000 + int(st.get('z-index', 0))))
+                            if 'shield-priority' in st:
+                                dr_element.shield.priority = int(st.get('shield-priority'))
+                            else:
+                                dr_element.shield.priority = min(19100, (16000 + int(st.get('z-index', 0))))
                             if st.get('shield-min-distance', 0) != 0:
                                 dr_element.shield.min_distance = int(st.get('shield-min-distance', 0))
 
@@ -300,14 +312,20 @@ def komap_mapswithme(options):
                                 dr_element.symbol.apply_for_type = 1
                             icon = mwm_encode_image(st)
                             dr_element.symbol.name = icon[0]
-                            dr_element.symbol.priority = min(19100, (16000 + int(st.get('z-index', 0))))
+                            if 'icon-priority' in st:
+                                dr_element.symbol.priority = int(st.get('icon-priority'))
+                            else:
+                                dr_element.symbol.priority = min(19100, (16000 + int(st.get('z-index', 0))))
                             if 'icon-min-distance' in st:
                                 dr_element.symbol.min_distance = int(st.get('icon-min-distance', 0))
                             has_icons = False
                         if st.get('symbol-shape'):
                             dr_element.circle.radius = float(st.get('symbol-size'))
                             dr_element.circle.color = mwm_encode_color(colors, st, 'symbol-fill')
-                            dr_element.circle.priority = min(19000, (14000 + int(st.get('z-index', 0))))
+                            if 'symbol-priority' in st:
+                                dr_element.circle.priority = int(st.get('symbol-priority'))
+                            else:
+                                dr_element.circle.priority = min(19000, (14000 + int(st.get('z-index', 0))))
                             has_icons = False
 
                     if has_text and st.get('text'):
@@ -339,24 +357,32 @@ def komap_mapswithme(options):
                                 if is_valid:
                                     dr_cur_subtext.is_optional = value
                             has_text.pop()
-                        dr_text.priority = min(19000, (base_z + int(st.get('z-index', 0))))
+                        if 'text-priority' in st:
+                            dr_text.priority = int(st.get('text-priority'))
+                        else:
+                            dr_text.priority = min(19000, (base_z + int(st.get('z-index', 0))))
                         has_text = None
 
                     if has_fills:
                         if ('fill-color' in st) and (float(st.get('fill-opacity', 1)) > 0):
                             dr_element.area.color = mwm_encode_color(colors, st, "fill")
+                            priority = 0
                             if st.get('fill-position', 'foreground') == 'background':
                                 if 'z-index' not in st:
                                     bgpos -= 1
-                                    dr_element.area.priority = bgpos - 16000
+                                    priority = bgpos - 16000
                                 else:
                                     zzz = int(st.get('z-index', 0))
                                     if zzz > 0:
-                                        dr_element.area.priority = zzz - 16000
+                                        priority = zzz - 16000
                                     else:
-                                        dr_element.area.priority = zzz - 16700
+                                        priority = zzz - 16700
                             else:
-                                dr_element.area.priority = (int(st.get('z-index', 0)) + 1 + 1000)
+                                priority = (int(st.get('z-index', 0)) + 1 + 1000)
+                            if 'area-priority' in st:
+                                dr_element.area.priority = int(st.get('area-priority'))
+                            else:
+                                dr_element.area.priority = priority
                             has_fills = False
 
                 dr_cont.element.extend([dr_element])
