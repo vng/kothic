@@ -243,8 +243,8 @@ def komap_mapswithme(options):
                             dr_line = LineRuleProto()
                             dr_line.width = (st.get('width', 0) * WIDTH_SCALE) + (st.get('casing-width') * WIDTH_SCALE * 2)
                             dr_line.color = mwm_encode_color(colors, st, "casing")
-                            if 'casing-line-priority' in st:
-                                dr_line.priority = int(st.get('casing-line-priority'))
+                            if '-x-me-casing-line-priority' in st:
+                                dr_line.priority = int(st.get('-x-me-casing-line-priority'))
                             else:
                                 dr_line.priority = min(int(st.get('z-index', 0) + 999), 20000)
                             dashes = st.get('casing-dashes', st.get('dashes', []))
@@ -276,8 +276,8 @@ def komap_mapswithme(options):
                             addPattern(dr_line.dashdot.dd)
                             dr_line.cap = dr_linecaps.get(st.get('linecap', 'butt'), BUTTCAP)
                             dr_line.join = dr_linejoins.get(st.get('linejoin', 'round'), ROUNDJOIN)
-                            if 'line-priority' in st:
-                                dr_line.priority = int(st.get('line-priority'))
+                            if '-x-me-line-priority' in st:
+                                dr_line.priority = int(st.get('-x-me-line-priority'))
                             else:
                                 dr_line.priority = min((int(st.get('z-index', 0)) + 1000), 20000)
                             dr_element.lines.extend([dr_line])
@@ -289,8 +289,8 @@ def komap_mapswithme(options):
                             dr_line.pathsym.name = icon[0]
                             dr_line.pathsym.step = float(st.get('pattern-spacing', 0)) - 16
                             dr_line.pathsym.offset = st.get('pattern-offset', 0)
-                            if 'line-priority' in st:
-                                dr_line.priority = int(st.get('line-priority'))
+                            if '-x-me-line-priority' in st:
+                                dr_line.priority = int(st.get('-x-me-line-priority'))
                             else:
                                 dr_line.priority = int(st.get('z-index', 0)) + 1000
                             dr_element.lines.extend([dr_line])
@@ -299,8 +299,8 @@ def komap_mapswithme(options):
                             dr_element.shield.color = mwm_encode_color(colors, st, "shield-text")
                             if st.get('shield-text-halo-radius', 0) != 0:
                                 dr_element.shield.stroke_color = mwm_encode_color(colors, st, "shield-text-halo", "white")
-                            if 'shield-priority' in st:
-                                dr_element.shield.priority = int(st.get('shield-priority'))
+                            if '-x-me-shield-priority' in st:
+                                dr_element.shield.priority = int(st.get('-x-me-shield-priority'))
                             else:
                                 dr_element.shield.priority = min(19100, (16000 + int(st.get('z-index', 0))))
                             if st.get('shield-min-distance', 0) != 0:
@@ -312,8 +312,8 @@ def komap_mapswithme(options):
                                 dr_element.symbol.apply_for_type = 1
                             icon = mwm_encode_image(st)
                             dr_element.symbol.name = icon[0]
-                            if 'icon-priority' in st:
-                                dr_element.symbol.priority = int(st.get('icon-priority'))
+                            if '-x-me-icon-priority' in st:
+                                dr_element.symbol.priority = int(st.get('-x-me-icon-priority'))
                             else:
                                 dr_element.symbol.priority = min(19100, (16000 + int(st.get('z-index', 0))))
                             if 'icon-min-distance' in st:
@@ -322,8 +322,8 @@ def komap_mapswithme(options):
                         if st.get('symbol-shape'):
                             dr_element.circle.radius = float(st.get('symbol-size'))
                             dr_element.circle.color = mwm_encode_color(colors, st, 'symbol-fill')
-                            if 'symbol-priority' in st:
-                                dr_element.circle.priority = int(st.get('symbol-priority'))
+                            if '-x-me-symbol-priority' in st:
+                                dr_element.circle.priority = int(st.get('-x-me-symbol-priority'))
                             else:
                                 dr_element.circle.priority = min(19000, (14000 + int(st.get('z-index', 0))))
                             has_icons = False
@@ -357,8 +357,8 @@ def komap_mapswithme(options):
                                 if is_valid:
                                     dr_cur_subtext.is_optional = value
                             has_text.pop()
-                        if 'text-priority' in st:
-                            dr_text.priority = int(st.get('text-priority'))
+                        if '-x-me-text-priority' in st:
+                            dr_text.priority = int(st.get('-x-me-text-priority'))
                         else:
                             dr_text.priority = min(19000, (base_z + int(st.get('z-index', 0))))
                         has_text = None
@@ -379,8 +379,8 @@ def komap_mapswithme(options):
                                         priority = zzz - 16700
                             else:
                                 priority = (int(st.get('z-index', 0)) + 1 + 1000)
-                            if 'area-priority' in st:
-                                dr_element.area.priority = int(st.get('area-priority'))
+                            if '-x-me-area-priority' in st:
+                                dr_element.area.priority = int(st.get('-x-me-area-priority'))
                             else:
                                 dr_element.area.priority = priority
                             has_fills = False
