@@ -51,15 +51,11 @@ def mwm_encode_image(st, prefix='icon', bgprefix='symbol'):
     return handle, handle
 
 def komap_mapswithme(options):
-
     ddir = os.path.dirname(options.outfile)
 
     classificator = {}
     class_order = []
     class_tree = {}
-
-    # Build classificator tree from mapcss-mapping.csv file
-    types_file = open(os.path.join(ddir, 'types.txt'), "w")
 
     colors_file_name = os.path.join(ddir, 'colors.txt')
     colors = set()
@@ -80,6 +76,9 @@ def komap_mapswithme(options):
         for patternsLine in patterns_in_file:
             addPattern([float(x) for x in patternsLine.split()])
         patterns_in_file.close()
+
+    # Build classificator tree from mapcss-mapping.csv file
+    types_file = open(os.path.join(ddir, 'types.txt'), "w")
 
     for row in csv.reader(open(os.path.join(ddir, 'mapcss-mapping.csv')), delimiter=';'):
         cl = row[0].replace("|", "-")
@@ -395,11 +394,13 @@ def komap_mapswithme(options):
     # Write drules_proto.bin and drules_proto.txt files
 
     drules_bin = open(os.path.join(options.outfile + '.bin'), "wb")
-    drules_txt = open(os.path.join(options.outfile + '.txt'), "wb")
     drules_bin.write(drules.SerializeToString())
-    drules_txt.write(unicode(drules))
     drules_bin.close()
-    drules_txt.close()
+
+    if options.txt:
+        drules_txt = open(os.path.join(options.outfile + '.txt'), "wb")
+        drules_txt.write(unicode(drules))
+        drules_txt.close()
 
     # Write classificator.txt and visibility.txt files
 
@@ -463,7 +464,9 @@ try:
     parser.add_option("-t", "--maxzoom", dest="maxzoom", default=19, type="int",
                       help="maximal available zoom level", metavar="ZOOM")
     parser.add_option("-o", "--output-file", dest="outfile", default="-",
-                      help="output filename (defaults to stdout)", metavar="FILE")
+                      help="output filename", metavar="FILE")
+    parser.add_option("-x", "--txt", dest="txt", action="store_true",
+                      help="create a text file for output", default=False)
 
     (options, args) = parser.parse_args()
 
