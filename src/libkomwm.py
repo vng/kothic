@@ -80,7 +80,12 @@ def komap_mapswithme(options):
     # Build classificator tree from mapcss-mapping.csv file
     types_file = open(os.path.join(ddir, 'types.txt'), "w")
 
+    cnt = 1
     for row in csv.reader(open(os.path.join(ddir, 'mapcss-mapping.csv')), delimiter=';'):
+        while int(row[5]) > cnt:
+            print >> types_file, "mapswithme"
+            cnt += 1
+        cnt += 1
         cl = row[0].replace("|", "-")
         pairs = [i.strip(']').split("=") for i in row[1].split(',')[0].split('[')]
         kv = {}
