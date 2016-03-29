@@ -218,7 +218,7 @@ def komap_mapswithme(options):
                 has_text = None
                 txfmt = []
                 for st in zstyle:
-                    if st.get('text') and not st.get('text') in txfmt:
+                    if st.get('text') and st.get('text') != 'none' and not st.get('text') in txfmt:
                         txfmt.append(st.get('text'))
                         if has_text is None:
                             has_text = []
@@ -332,7 +332,7 @@ def komap_mapswithme(options):
                                 dr_element.circle.priority = min(19000, (14000 + int(st.get('z-index', 0))))
                             has_icons = False
 
-                    if has_text and st.get('text'):
+                    if has_text and st.get('text') and st.get('text') != 'none':
                         has_text = has_text[:2]
                         has_text.reverse()
                         dr_text = dr_element.path_text
