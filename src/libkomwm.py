@@ -99,15 +99,18 @@ def komap_mapswithme(options):
             else:
                 kv[i[0]] = i[1]
         classificator[cl] = kv
+
         if row[2] != "x":
             class_order.append(cl)
-            print >> types_file, row[0]
+
+        if row[6]:
+            print >> types_file, row[6]
         else:
-            # compatibility mode
-            if row[6]:
-                print >> types_file, row[6]
+            if row[2] != "x":
+                print >> types_file, row[0]
             else:
                 print >> types_file, "mapswithme"
+
         class_tree[cl] = row[0]
     class_order.sort()
     types_file.close()
